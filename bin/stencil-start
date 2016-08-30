@@ -55,6 +55,8 @@ if( Program.prefix ) {
   } else {
     dotStencilFilePath = Path.join(themePath, '.stencil_' + Program.prefix);
     themeConfigPath = Path.join(themePath, 'config_' + Program.prefix + '.json');
+    // Instantiate themeConfig
+    themeConfig = ThemeConfig.getInstance(themePath, 'config_' + Program.prefix + '.json');
   }
 }
 
@@ -70,13 +72,15 @@ if (!fileExist(themeConfigPath)) {
     return console.error('Error: You must have a '.red + 'config.json'.cyan + ' file in your top level theme directory.');
 }
 
+if( !Program.prefix ) {
+  // Instantiate themeConfig
+  themeConfig = ThemeConfig.getInstance(themePath);
+}
+
 // If the value is true it means that no variation was passed in.
 if (Program.variation === true) {
     return console.error('Error: You have to specify a value for -v or --variation'.red);
 }
-
-// Instantiate themeConfig
-themeConfig = ThemeConfig.getInstance(themePath);
 
 if (Program.variation) {
     try {
