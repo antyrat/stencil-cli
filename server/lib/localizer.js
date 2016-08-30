@@ -3,7 +3,7 @@ var _ = require('lodash'),
 
 module.exports.getPreferredTranslation = function(acceptLanguageHeader, translations) {
     // default the preferred translation
-    console.log( 'I was here' );
+
     var preferredTranslation = translations['en'],
         preferredLang = parser.parse(acceptLanguageHeader);
     // march down the preferred languages and use the first translatable locale
