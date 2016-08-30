@@ -388,7 +388,7 @@ internals.getPencilResponse = function (data, request, response, configuration) 
         context: data.context,
         translations: data.translations,
         method: request.method,
-        acceptLanguage: request.headers['accept-language'],
+        acceptLanguage: 'en-CA', //request.headers['accept-language']
         headers: response.headers,
         statusCode: response.statusCode
     }, internals.themeAssembler);
