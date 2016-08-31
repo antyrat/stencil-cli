@@ -39,7 +39,7 @@ require('colors');
 Program
     .version(Pkg.version)
     .option('-o, --open', 'Automatically open default browser')
-    .option('-p, --prefix [name]', 'Load config, init and lang files with prefixes')
+    .option('-p, --prefix [name]', 'Load config.json and .stencil files with prefixes')
     .option('-v, --variation [name]', 'Set which theme variation to use while developing')
     .option('-t, --test', 'Enable QA mode which will bundle all javascript for speed to test locally')
     .option('--tunnel', 'Create a tunnel URL which points to your local server that anyone can use.')
