@@ -17,6 +17,7 @@ var stencilToken = require('../server/lib/stencil-token');
 var Url = require('url');
 var Wreck = require('wreck');
 var jsonLint = require('../lib/json-lint');
+var versionCheck = require('../lib/version-check');
 var themePath = process.cwd();
 var allowedCssCompilers = ['scss', 'less'];
 var browserSyncPort;
@@ -58,6 +59,9 @@ if( Program.prefix ) {
     // Instantiate themeConfig
     themeConfig = ThemeConfig.getInstance(themePath, 'config_' + Program.prefix + '.json');
   }
+}
+if (!versionCheck()) {
+    return;
 }
 
 if (!fileExist(dotStencilFilePath)) {

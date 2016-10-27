@@ -181,9 +181,11 @@ internals.parseResponse = function (bcAppData, request, response, responseArgs, 
     var url = responseArgs.url;
 
     if (!_.has(bcAppData, 'pencil_response')) {
+
+        delete response.headers['x-frame-options'];
+
         // this is a raw response not emitted by TemplateEngine
         return callback(null, new Responses.RawResponse(
-            request,
             bcAppData,
             response.headers,
             response.statusCode
@@ -346,8 +348,17 @@ internals.getTemplatePath = function (path, data) {
 
     if (internals.validCustomTemplatePageTypes.indexOf(pageType) >= 0 && _.isPlainObject(customLayouts[pageType])) {
         templatePath = _.findKey(customLayouts[pageType], function(p) {
-            // remove trailing slashes to compare
-            return p.replace(/\/$/, '') === path.replace(/\/$/, '');
+            // normalize input to an array
+            if (typeof p === 'string') {
+              p = [p];
+            }
+
+            var matches = p.filter(function(url) {
+              // remove trailing slashes to compare
+              return url.replace(/\/$/, '') === path.replace(/\/$/, '');
+            });
+
+            return matches.length > 0;
         });
 
         if (templatePath) {

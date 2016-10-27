@@ -1,7 +1,5 @@
 var Hoek = require('hoek'),
-    Path = require('path'),
     ThemeConfig = require('../../../lib/theme-config'),
-    Url = require('url'),
     internals = {
         options: {
             storeUrl: '',
@@ -12,6 +10,7 @@ var Hoek = require('hoek'),
         paths: {
             renderer: '/{url*}',
             staticAssets: '/assets/{path*}',
+            internalApi: '/internalapi/{path*}',
             cdnAssets: '/stencil/{versionId}/{configId}/{fileName*}',
             cssFiles: '/stencil/{versionId}/{configId}/css/{fileName}.css',
             favicon: '/favicon.ico',
@@ -82,6 +81,25 @@ internals.registerRoutes = function(server, next) {
             handler: {
                 directory: {
                     path: './assets'
+                }
+            },
+            config: {
+                state: {
+                    failAction: 'log'
+                }
+            }
+        },
+        {
+            method: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+            path: internals.paths.internalApi,
+            handler: {
+                proxy: {
+                    host: internals.options.storeUrl.replace(/http[s]?:\/\//, ''),
+                    rejectUnauthorized: false,
+                    protocol: 'https',
+                    port: 443,
+                    passThrough: true,
+                    xforward: true,
                 }
             },
             config: {
