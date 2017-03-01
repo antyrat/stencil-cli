@@ -60,6 +60,7 @@ bundle = new Bundle(themePath, themeConfig, configuration, stencilConfig, {
     marketplace: Program.marketplace,
     dest: Program.dest,
     name: Program.name,
+    prefix: Program.prefix
 });
 
 /**
