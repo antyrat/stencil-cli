@@ -19,28 +19,15 @@ var versionCheck = require('../lib/version-check');
 Program
     .version(pkg.version)
     .option('-d, --dest [dest]', 'Where to save the zip file. It defaults to the current directory you are in when bundling')
-    .option('-p, --prefix [name]', 'Use prefixes for config.json and .stencil files')
     .option('-n, --name  [filename]', 'What do you want to call the zip file. It defaults to stencil-bundle.zip')
     .option('-m, --marketplace', 'Runs extra bundle validations for partners who can create marketplace themes')
     .parse(process.argv);
 
-if( Program.prefix ) {
-  // If the value is true it means that no prefix was passed in.
-  if (Program.prefix === true) {
-      return console.error('Error: You have to specify a value for -p or --prefix'.red);
-  } else {
-    themeConfig = ThemeConfig.getInstance(themePath, 'config_' + Program.prefix + '.json');
-  }
-} else {
-  themeConfig = ThemeConfig.getInstance(themePath);
-}
-
 if (!versionCheck()) {
     return;
 }
-if (fileExist(stencilConfigFilePath)) {
-    stencilConfig = require(stencilConfigFilePath);
-}
+
+themeConfig = ThemeConfig.getInstance(themePath);
 
 if (Program.dest === true) {
     return console.error('Error: You have to specify a value for -d or --dest'.red);
@@ -60,7 +47,6 @@ bundle = new Bundle(themePath, themeConfig, configuration, stencilConfig, {
     marketplace: Program.marketplace,
     dest: Program.dest,
     name: Program.name,
-    prefix: Program.prefix
 });
 
 /**

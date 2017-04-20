@@ -1,4 +1,3 @@
-var webpack = require('webpack');
 var LiveReloadPlugin = require('webpack-livereload-plugin');
 var CopyWebpackPlugin = require('copy-webpack-plugin');
 var CleanWebpackPlugin = require('clean-webpack-plugin');
@@ -8,6 +7,8 @@ var distPath = Path.join(__dirname, 'server/plugins/stencil-editor/public/dist')
 // Icons used from pattern lab
 var icons = [
     'ic-add',
+    'ic-arrow-drop-up',
+    'ic-arrow-drop-down',
     'ic-chevron-left',
     'ic-chevron-right',
     'ic-delete',
@@ -32,18 +33,16 @@ var config = {
         path: distPath
     },
     module: {
-        loaders: [
-            {
-                test: /\.js$/,
-                exclude: /(node_modules|ng-stencil-editor)/,
-                loader: 'babel?presets[]=es2015'
-            }
-        ]
+        loaders: [{
+            test: /\.js$/,
+            exclude: /(node_modules|ng-stencil-editor)/,
+            loader: 'babel?presets[]=es2015'
+        }]
     },
     plugins: [
 
         new CleanWebpackPlugin(['*'], {
-          root: distPath
+            root: distPath
         }),
 
         new LiveReloadPlugin({
@@ -51,8 +50,7 @@ var config = {
             host: 'localhost'
         }),
 
-        new CopyWebpackPlugin([
-            {
+        new CopyWebpackPlugin([{
                 context: 'node_modules/bcapp-pattern-lab/dist',
                 from: 'svg/icons/{' + icons + '}.svg',
                 to: Path.join(distPath, 'bcapp-pattern-lab')

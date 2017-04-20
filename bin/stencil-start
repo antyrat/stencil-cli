@@ -40,7 +40,6 @@ require('colors');
 Program
     .version(Pkg.version)
     .option('-o, --open', 'Automatically open default browser')
-    .option('-p, --prefix [name]', 'Load config.json and .stencil files with prefixes')
     .option('-v, --variation [name]', 'Set which theme variation to use while developing')
     .option('-t, --test', 'Enable QA mode which will bundle all javascript for speed to test locally')
     .option('--tunnel', 'Create a tunnel URL which points to your local server that anyone can use.')
@@ -49,17 +48,7 @@ Program
     .option('--theme-editor-port [port]', 'Run the Theme Editor on a different port')
     .parse(process.argv);
 
-if( Program.prefix ) {
-  // If the value is true it means that no prefix was passed in.
-  if (Program.prefix === true) {
-      return console.error('Error: You have to specify a value for -p or --prefix'.red);
-  } else {
-    dotStencilFilePath = Path.join(themePath, '.stencil_' + Program.prefix);
-    themeConfigPath = Path.join(themePath, 'config_' + Program.prefix + '.json');
-    // Instantiate themeConfig
-    themeConfig = ThemeConfig.getInstance(themePath, 'config_' + Program.prefix + '.json');
-  }
-}
+
 if (!versionCheck()) {
     return;
 }
@@ -68,23 +57,17 @@ if (!fileExist(dotStencilFilePath)) {
     return console.error('Error: Please run'.red + ' $ stencil init'.cyan + ' first.'.red);
 }
 
-if (fileExist(stencilConfigFilePath)) {
-    stencilConfig = require(stencilConfigFilePath);
-}
-
-if (!fileExist(themeConfigPath)) {
+if (!fileExist(Path.join(themePath, 'config.json'))) {
     return console.error('Error: You must have a '.red + 'config.json'.cyan + ' file in your top level theme directory.');
-}
-
-if( !Program.prefix ) {
-  // Instantiate themeConfig
-  themeConfig = ThemeConfig.getInstance(themePath);
 }
 
 // If the value is true it means that no variation was passed in.
 if (Program.variation === true) {
     return console.error('Error: You have to specify a value for -v or --variation'.red);
 }
+
+// Instantiate themeConfig
+themeConfig = ThemeConfig.getInstance(themePath);
 
 if (Program.variation) {
     try {
