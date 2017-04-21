@@ -69,7 +69,7 @@ if (!fileExist(dotStencilFilePath)) {
     return console.error('Error: Please run'.red + ' $ stencil init'.cyan + ' first.'.red);
 }
 
-if (!fileExist(Path.join(themePath, 'config.json'))) {
+if (!fileExist(themeConfigPath)) {
     return console.error('Error: You must have a '.red + 'config.json'.cyan + ' file in your top level theme directory.');
 }
 
