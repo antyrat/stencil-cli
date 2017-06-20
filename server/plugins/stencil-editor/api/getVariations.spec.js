@@ -1,27 +1,26 @@
-var Code = require('code');
-var Fs = require('fs');
-var Lab = require('lab');
-var Path = require('path');
-var Sinon = require('sinon');
-var lab = exports.lab = Lab.script();
-var validator = new (require('jsonschema').Validator)();
-var ThemeConfig = require('../../../../lib/theme-config');
-var GetVariations = require('./getVariations');
-var responseSchema = require('../../../../test/_mocks/api/getVariations.schema');
+const Code = require('code');
+const Lab = require('lab');
+const Path = require('path');
+const lab = exports.lab = Lab.script();
+const validator = new (require('jsonschema').Validator)();
+const Utils = require('../../../lib/utils');
+const ThemeConfig = require('../../../../lib/theme-config');
+const GetVariations = require('./getVariations');
+const responseSchema = require('../../../../test/_mocks/api/getVariations.schema');
 
 lab.describe('GET /variations/{id} api endpoint', function() {
     var requestStub = {
         log: function () {},
-        params: {}
+        params: {},
     };
     var options = {
-        themeEditorHost: 'http://localhost:8181'
+        themeEditorHost: 'http://localhost:8181',
     };
 
     var themeConfig = new ThemeConfig.getInstance();
 
     lab.it('should reply with the right schema and include all variations', function(done) {
-        requestStub.params.variationId = 2;
+        requestStub.params.variationId = Utils.int2uuid(2);
 
         themeConfig.setThemePath(Path.join(process.cwd(), 'test/_mocks/themes/valid'));
 
@@ -53,7 +52,7 @@ lab.describe('GET /variations/{id} api endpoint', function() {
     });
 
     lab.it('should reply with a 404 error if the variationId does not exists', function(done) {
-        requestStub.params.variationId = 44;
+        requestStub.params.variationId = Utils.int2uuid(44);
 
         themeConfig.setThemePath(Path.join(process.cwd(), 'test/_mocks/themes/valid'));
 
@@ -70,7 +69,7 @@ lab.describe('GET /variations/{id} api endpoint', function() {
                         .to.be.equal(404);
 
                     done();
-                }
+                },
             };
         });
     });

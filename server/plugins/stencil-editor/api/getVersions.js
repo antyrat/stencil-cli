@@ -1,5 +1,6 @@
-var Path = require('path');
-var Url = require('url');
+const Path = require('path');
+const Url = require('url');
+const Utils = require('../../../lib/utils');
 
 /**
  * Returns a request handler for GET /api/versions/{versionId}
@@ -22,9 +23,9 @@ module.exports = function (options, themeConfig) {
                         {
                             type: 'parse_error',
                             title: 'Parse Error',
-                            detail: err.message
-                        }
-                    ]
+                            detail: err.message,
+                        },
+                    ],
                 }).code(400);
             }
 
@@ -35,17 +36,17 @@ module.exports = function (options, themeConfig) {
 
             reply({
                 data: {
-                    id: 'theme',
+                    id: Utils.int2uuid(1),
                     name: themeConfig.getName(),
                     price: themeConfig.getPrice(),
                     displayVersion: themeConfig.getVersion(),
                     editorSchema: schema,
                     status: 'draft',
                     numVariations: themeConfig.getVariationCount(),
-                    defaultVariationId: themeConfig.variationIndex + 1,
-                    screenshot: getScreenshotUrl(options, themeConfig.getComposedImage())
+                    defaultVariationId: Utils.int2uuid(themeConfig.variationIndex + 1),
+                    screenshot: getScreenshotUrl(options, themeConfig.getComposedImage()),
                 },
-                meta: themeConfig.getMeta()
+                meta: themeConfig.getMeta(),
             });
         });
     };

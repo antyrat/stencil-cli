@@ -1,12 +1,11 @@
-var Code = require('code');
-var Fs = require('fs');
-var Lab = require('lab');
-var Path = require('path');
-var Sinon = require('sinon');
-var lab = exports.lab = Lab.script();
-var validator = new (require('jsonschema').Validator)();
-var PostConfigurations = require('./postConfigurations');
-var responseSchema = require('../../../../test/_mocks/api/postConfigurations.schema');
+const Code = require('code');
+const Lab = require('lab');
+const Sinon = require('sinon');
+const lab = exports.lab = Lab.script();
+const validator = new (require('jsonschema').Validator)();
+const Utils = require('../../../lib/utils');
+const PostConfigurations = require('./postConfigurations');
+const responseSchema = require('../../../../test/_mocks/api/postConfigurations.schema');
 
 lab.describe('POST /configurations/{id} api endpoint', function () {
 
@@ -17,12 +16,12 @@ lab.describe('POST /configurations/{id} api endpoint', function () {
         };
         var requestStub = {
             payload: {
-                variationId: 1,
-                preview: 1,
+                variationId: Utils.int2uuid(1),
+                preview: true,
                 settings: {
-                    a: 1
-                }
-            }
+                    a: 1,
+                },
+            },
         };
 
         PostConfigurations({}, themeConfig)(requestStub, function (response) {
@@ -48,11 +47,11 @@ lab.describe('POST /configurations/{id} api endpoint', function () {
         };
         var requestStub = {
             payload: {
-                variationId: 2,
+                variationId: Utils.int2uuid(2),
                 settings: {
-                    b: 1
-                }
-            }
+                    b: 1,
+                },
+            },
         };
 
         PostConfigurations({}, themeConfig)(requestStub, function (response) {
@@ -79,11 +78,11 @@ lab.describe('POST /configurations/{id} api endpoint', function () {
         var requestStub = {
             payload: {
                 reset: true,
-                variationId: 1,
+                variationId: Utils.int2uuid(1),
                 settings: {
-                    b: 1
-                }
-            }
+                    b: 1,
+                },
+            },
         };
 
         PostConfigurations({}, themeConfig)(requestStub, function(response) {
@@ -109,7 +108,7 @@ lab.describe('POST /configurations/{id} api endpoint', function () {
                     Code.expect(code).to.be.equal(405);
 
                     done();
-                }
+                },
             };
         });
     });
