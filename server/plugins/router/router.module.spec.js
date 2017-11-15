@@ -1,71 +1,64 @@
-var Code = require('code');
-var Hapi = require('hapi');
-var Lab = require('lab');
-var lab = exports.lab = Lab.script();
-var describe = lab.describe;
-var expect = Code.expect;
-var it = lab.it;
-var router = require('./router.module');
+const Code = require('code');
+const Hapi = require('hapi');
+const Lab = require('lab');
+const lab = exports.lab = Lab.script();
+const describe = lab.describe;
+const expect = Code.expect;
+const it = lab.it;
+const router = require('./router.module');
 
-describe('Router', function () {
-    var server = new Hapi.Server(),
-        RendererPluginMock = {
-            register: function(server, options, next) {
-                server.expose('implementation', function(request, reply) {
-                    return reply('RendererHandlerFired');
-                });
+describe('Router', () => {
+    var server = new Hapi.Server();
+    const RendererPluginMock = {
+        register: function(server, options, next) {
+            server.expose('implementation', (request, reply) => reply('RendererHandlerFired'));
 
-                next();
-            }
+            next();
         },
-        ThemeAssetsMock = {
-            register: function(server, options, next) {
-                server.expose('cssHandler', function(request, reply) {
-                    return reply('CssHandlerFired');
-                });
+    };
+    const ThemeAssetsMock = {
+        register: function(server, options, next) {
+            server.expose('cssHandler', (request, reply) => reply('CssHandlerFired'));
+            server.expose('assetHandler', (request, reply) => reply('assetHandlerFired'));
 
-                server.expose('assetHandler', function(request, reply) {
-                    return reply('assetHandlerFired');
-                });
-
-                next();
-            }
-        };
+            next();
+        },
+    };
 
     RendererPluginMock.register.attributes = {
         name: 'Renderer',
-        version: '0.0.1'
+        version: '0.0.1',
     };
 
     ThemeAssetsMock.register.attributes = {
         name: 'ThemeAssets',
-        version: '0.0.1'
+        version: '0.0.1',
     };
 
     server.connection({
-        port: 3000
+        port: 3000,
     });
 
-    lab.before(function(done) {
+    lab.before(done => {
         server.register([
             RendererPluginMock,
             ThemeAssetsMock,
-            router
-        ], function (err) {
+            router,
+        ], err => {
             expect(err).to.equal(undefined);
             server.start(done);
         });
     });
 
-    lab.after(function(done) {
+    lab.after(done => {
         server.stop(done);
     });
 
-    it('should call the Renderer handler', function (done) {
+    it('should call the Renderer handler', done => {
         server.inject({
             method: 'GET',
-            url: '/test'
-        }, function (response) {
+            url: '/test',
+        }, response => {
             expect(response.statusCode).to.equal(200);
             expect(response.payload).to.equal('RendererHandlerFired');
 
@@ -73,11 +66,11 @@ describe('Router', function () {
         });
     });
 
-    it('should call the CSS handler', function (done) {
+    it('should call the CSS handler', done => {
         server.inject({
             method: 'GET',
-            url: '/stencil/123/234/css/file.css'
-        }, function (response) {
+            url: '/stencil/123/css/file.css',
+        }, response => {
             expect(response.statusCode).to.equal(200);
             expect(response.payload).to.equal('CssHandlerFired');
 
@@ -85,11 +78,11 @@ describe('Router', function () {
         });
     });
 
-    it('should call the assets handler', function (done) {
+    it('should call the assets handler', done => {
         server.inject({
             method: 'GET',
-            url: '/stencil/123/234/js/file.js'
-        }, function (response) {
+            url: '/stencil/123/js/file.js',
+        }, response => {
             expect(response.statusCode).to.equal(200);
             expect(response.payload).to.equal('assetHandlerFired');
 

@@ -1,18 +1,18 @@
-var Fs = require('fs'),
-    Glue = require('glue'),
-    Hoek = require('hoek'),
-    Path = require('path'),
-    Url = require('url'),
-    manifest = require('./manifest'),
-    logo = require('./lib/show-logo'),
-    internals = {};
+'use strict';
+
+const Glue = require('glue');
+const Hoek = require('hoek');
+const Url = require('url');
+const manifest = require('./manifest');
+const logo = require('./lib/show-logo');
+const internals = {};
 
 require('colors');
 
-module.exports = function(options, callback) {
-    var config = manifest.get('/'),
-        parsedSecureUrl = Url.parse(options.dotStencilFile.storeUrl), //The url to a secure page (prompted as login page)
-        parsedNormalUrl = Url.parse(options.dotStencilFile.normalStoreUrl); //The host url of the homepage;
+module.exports = (options, callback) => {
+    const config = manifest.get('/');
+    const parsedSecureUrl = Url.parse(options.dotStencilFile.storeUrl); //The url to a secure page (prompted as login page)
+    const parsedNormalUrl = Url.parse(options.dotStencilFile.normalStoreUrl); //The host url of the homepage;
 
     callback = Hoek.nextTick(callback);
 
@@ -25,14 +25,19 @@ module.exports = function(options, callback) {
     config.plugins['./plugins/renderer/renderer.module'].useCache = options.useCache;
     config.plugins['./plugins/renderer/renderer.module'].username = options.dotStencilFile.username;
     config.plugins['./plugins/renderer/renderer.module'].token = options.dotStencilFile.token;
+    config.plugins['./plugins/renderer/renderer.module'].clientId = options.dotStencilFile.clientId;
+    config.plugins['./plugins/renderer/renderer.module'].accessToken = options.dotStencilFile.accessToken;
     config.plugins['./plugins/renderer/renderer.module'].customLayouts = options.dotStencilFile.customLayouts;
+    config.plugins['./plugins/renderer/renderer.module'].stencilEditorPort = options.stencilEditorPort;
+    config.plugins['./plugins/renderer/renderer.module'].themePath = options.themePath;
+    config.plugins['./plugins/theme-assets/theme-assets.module'].themePath = options.themePath;
 
-    Glue.compose(config, {relativeTo: __dirname}, function (err, server) {
+    Glue.compose(config, {relativeTo: __dirname}, (err, server) => {
         if (err) {
             return callback(err);
         }
 
-        server.start(function () {
+        server.start(() => {
             console.log(logo);
 
             if (options.stencilEditorEnabled) {
@@ -47,12 +52,12 @@ module.exports = function(options, callback) {
     });
 };
 
-internals.startThemeEditor = function(options, callback) {
-    var themeEditorHost = 'http://localhost:' + options.stencilEditorPort;
-    var stencilEditorConfig = {
+internals.startThemeEditor = (options, callback) => {
+    const themeEditorHost = 'http://localhost:' + options.stencilEditorPort;
+    const stencilEditorConfig = {
         connections: [{
             host: 'localhost',
-            port: options.stencilEditorPort
+            port: options.stencilEditorPort,
         }],
         plugins: {
             './plugins/stencil-editor/stencil-editor.module': {
@@ -60,17 +65,18 @@ internals.startThemeEditor = function(options, callback) {
                 stencilServerPort: options.dotStencilFile.stencilServerPort,
                 stencilEditorPort: options.stencilEditorPort,
                 themeEditorHost: themeEditorHost,
-                themeServer: options.themeServer
-            }
-        }
+                themeServer: options.themeServer,
+                themePath: options.themePath,
+            },
+        },
     };
 
-    Glue.compose(stencilEditorConfig, {relativeTo: __dirname}, function (err, server) {
+    Glue.compose(stencilEditorConfig, {relativeTo: __dirname}, (err, server) => {
         if (err) {
             return callback(err);
         }
 
-        server.start(function () {
+        server.start(() => {
             console.log('Theme Editor:', themeEditorHost.cyan);
             return callback();
         });

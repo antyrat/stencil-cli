@@ -19,16 +19,12 @@ var Wreck = require('wreck');
 var jsonLint = require('../lib/json-lint');
 var versionCheck = require('../lib/version-check');
 var themePath = process.cwd();
-var allowedCssCompilers = ['scss', 'less'];
 var browserSyncPort;
-var cssCompilerDir;
-var cssWatchBaseDir = Path.join(themePath, 'assets/');
 var templatePath = Path.join(themePath, 'templates');
 var dotStencilFilePath = Path.join(themePath, '.stencil');
 var stencilConfigFilePath = Path.join(themePath, 'stencil.conf.js');
 var themeConfigPath = Path.join(themePath, 'config.json');
 var dotStencilFile;
-var isTopLevelCssRegex;
 var stencilServerPort;
 var stencilConfig;
 var themeConfig;
@@ -51,7 +47,7 @@ Program
 
 if( Program.prefix ) {
   // If the value is true it means that no prefix was passed in.
-  if (Program.prefix === true) {
+  if (Program.prefix ==Program= true) {
       return console.error('Error: You have to specify a value for -p or --prefix'.red);
   } else {
     dotStencilFilePath = Path.join(themePath, '.stencil_' + Program.prefix);
@@ -101,14 +97,8 @@ try {
     return console.error(e.stack);
 }
 
-if (allowedCssCompilers.indexOf(configuration.css_compiler) === -1) {
-    return console.error('Error: Only %s are allowed as CSS Compilers'.red, allowedCssCompilers.join(', '));
-}
-
 browserSyncPort = dotStencilFile.port;
 stencilServerPort = ++dotStencilFile.port;
-cssCompilerDir = cssWatchBaseDir + configuration.css_compiler;
-isTopLevelCssRegex = new RegExp('^(?!_).+\.(?:' + configuration.css_compiler + ')$');
 
 if (!(dotStencilFile.normalStoreUrl) || !(dotStencilFile.customLayouts)) {
     return console.error(
@@ -131,60 +121,43 @@ if (dotStencilFile.staplerUrl) {
 Wreck.get(
     Url.resolve(staplerUrl, '/stencil-version-check?v=' + Pkg.version),
     {
-        headers: headers
+        headers: headers,
+        json: true,
+        rejectUnauthorized: false,
     },
     function (err, res, payload) {
-        var retError = err !== null,
-            bundleTask;
+        var bundleTask;
 
-        try {
-            payload = jsonLint.parse(payload);
-
-            if (payload.error) {
-                return console.error(payload.error.red);
-            }
-        } catch (e) {
-            retError = true;
-        }
-
-        if (retError) {
+        if (err || !payload) {
             console.error(
                 'The BigCommerce Store you are pointing to either does not exist or is not available at this time.'.red
             );
+        } else if (payload.error) {
+            return console.error(payload.error.red);
         } else if (payload.status !== 'ok') {
             console.error(
                 'Error: You are using an outdated version of stencil-cli, please run '.red +
                 '$ npm install -g @bigcommerce/stencil-cli'.cyan
             );
         } else {
-            stencilToken.getAuth({
-                username: dotStencilFile.username,
-                token: dotStencilFile.token,
-                host: payload.sslUrl
-            }, function (err, response) {
-                if (response.authorized) {
-                    dotStencilFile.storeUrl = payload.sslUrl;
-                    dotStencilFile.normalStoreUrl = payload.baseUrl;
-                    dotStencilFile.stencilServerPort = stencilServerPort;
+            dotStencilFile.storeUrl = payload.sslUrl;
+            dotStencilFile.normalStoreUrl = payload.baseUrl;
+            dotStencilFile.stencilServerPort = stencilServerPort;
 
-                    if (configuration.jspm && Program.test) {
-                        bundleTask = JspmAssembler.assemble(
-                            {
-                                bootstrap: configuration.jspm.bootstrap
-                            },
-                            themePath
-                        );
+            if (configuration.jspm && Program.test) {
+                bundleTask = JspmAssembler.assemble(
+                    {
+                        bootstrap: configuration.jspm.bootstrap
+                    },
+                    themePath
+                );
 
-                        bundleTask(function (result) {
-                            return startServer();
-                        });
-                    } else {
-                        return startServer();
-                    }
-                } else {
-                    return console.error('Unauthorized, please use a valid username/token'.red);
-                }
-            })
+                bundleTask(function (result) {
+                    return startServer();
+                });
+            } else {
+                return startServer();
+            }
         }
     }
 );
@@ -198,7 +171,8 @@ function startServer() {
         variationIndex: themeConfig.variationIndex || 0,
         stencilEditorEnabled: Program.themeEditor,
         stencilEditorPort: Program.themeEditorPort || 8181,
-        useCache: Program.cache
+        useCache: Program.cache,
+        themePath: themePath,
     };
 
     Server(params, function (err) {
@@ -221,33 +195,10 @@ function startServer() {
         // Display Set up information
         console.log(startUpInformation());
 
-        /**
-         * Watch the appropriate css directory based on which compiler was chosen.
-         * This will run on each file (and files in sub-directories) when the server starts
-         * up. We only want to run compilation on top level files as the ones in sub directories
-         * are most likely include files and will be pulled in by the top level files.
-         *
-         * When a file in a sub directory changes, we have to recompile all top level files because
-         * more than one could have included the changed file.
-         */
-        Bs.watch(cssCompilerDir, function (event, file) {
-            var relativePath,
-                changedFile,
-                basename;
-
-            if (event === 'add' || event === 'change') {
-                relativePath = Path.relative(cssCompilerDir, file);
-                // Only run it through if it's a top level file
-                if (
-                    !relativePath.match(/\//) && isTopLevelCssRegex.test(relativePath)
-                ) {
-                    basename = Path.basename(file, '.' + configuration.css_compiler);
-                    changedFile = Path.join(process.cwd(), 'assets/css', basename + '.css');
-                    Bs.reload(changedFile);
-                    // Only reload top level files if this is a change event and it's in a sub directory
-                } else if (event === 'change') {
-                    reloadTopLevelCss(cssCompilerDir);
-                }
+        // Watch sccs directory and automatically reload all css files if a file changes
+        Bs.watch(Path.join(themePath, 'assets/scss'), event => {
+            if (event === 'change') {
+                Bs.reload(`stencil/*.css`);
             }
         });
 
@@ -316,7 +267,7 @@ function startServer() {
     });
 
     if (stencilConfig && typeof(stencilConfig.development) === 'function') {
-        stencilConfig.development(Bs);
+        stencilConfig.initWorker().development(Bs);
     }
 }
 
@@ -351,7 +302,7 @@ function assembleTemplates(templatePath, callback) {
             return file.replace(templatePath + Path.sep, '').replace('.html', '');
         });
 
-        Async.map(files, templateAssembler.assemble, function (err, results) {
+        Async.map(files, templateAssembler.assemble.bind(null, templatePath), function (err, results) {
             if (err) {
                 callback(err);
             }
@@ -361,32 +312,7 @@ function assembleTemplates(templatePath, callback) {
 }
 
 /**
- * Reloads all top level scss/less files that aren't prefixed with an underscore.
- *
- * @param cssCompilerDir
- */
-function reloadTopLevelCss(cssCompilerDir) {
-    var changedFile,
-        basename;
-
-    Fs.readdir(cssCompilerDir, function (err, files) {
-        if (err) {
-            return console.error(err);
-        }
-
-        files.filter(function (file) {
-            return isTopLevelCssRegex.test(file);
-        }).forEach(function (file) {
-            basename = Path.basename(file, '.' + configuration.css_compiler);
-            changedFile = Path.join(process.cwd(), 'assets/css', basename + '.css');
-
-            Bs.reload(changedFile);
-        });
-    });
-}
-
-/**
- * Check if file exist syncronous
+ * Check if file exist synchronous
  * @param  {string} path
  * @return {boolean}
  */

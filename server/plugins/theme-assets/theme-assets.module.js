@@ -1,15 +1,12 @@
-var Boom = require('boom'),
-    CssAssembler = require('../../../lib/css-assembler'),
-    Hoek = require('hoek'),
-    Path = require('path'),
-    StencilStyles = require('@bigcommerce/stencil-styles'),
-    Fs = require('fs'),
-    _ = require('lodash'),
-    internals = {
-        options: {
-            cssBasePath: ''
-        }
-    };
+const Boom = require('boom');
+const CssAssembler = require('../../../lib/css-assembler');
+const Utils = require('../../lib/utils');
+const Hoek = require('hoek');
+const Path = require('path');
+const StencilStyles = require('@bigcommerce/stencil-styles');
+const internals = {
+    options: {},
+};
 
 module.exports.register = function (server, options, next) {
     internals.options = Hoek.applyToDefaults(internals.options, options);
@@ -24,7 +21,29 @@ module.exports.register = function (server, options, next) {
 
 module.exports.register.attributes = {
     name: 'ThemeAssets',
-    version: '0.0.1'
+    version: '0.0.1',
+};
+
+/**
+ * Get the variation index from the "ConfigId" in the css filename
+ * @param  {string} fileName
+ * @return {number}
+ */
+internals.getVariationIndex = fileName => {
+    const match = fileName.match(new RegExp(`.+-(${Utils.uuidRegExp})$`));
+
+    return match ? Utils.uuid2int(match[1]) - 1 : 0;
+};
+
+/**
+ * Get the original css file name
+ * @param  {string} fileName
+ * @return {string}
+ */
+internals.getOriginalFileName = fileName => {
+    const match = fileName.match(new RegExp(`(.+)-${Utils.uuidRegExp}$`));
+
+    return match ? match[1] : fileName;
 };
 
 /**
@@ -34,44 +53,37 @@ module.exports.register.attributes = {
  * @param reply
  */
 internals.cssHandler = function (request, reply) {
-    var variationIndex = _.parseInt(request.params.configId - 1, 10);
-    var fileParts = Path.parse(request.params.fileName);
-    var compiler;
-    var basePath;
-    var pathToFile;
-    var configuration;
+    const variationIndex = internals.getVariationIndex(request.params.fileName);
 
     if (!request.app.themeConfig.variationExists(variationIndex)) {
-        return reply(Boom.notFound('Variation ' + request.params.configId + ' does not exist.'));
+        return reply(Boom.notFound('Variation ' + (variationIndex + 1) + ' does not exist.'));
     }
 
     // Set the variation to get the right theme configuration
     request.app.themeConfig.setVariation(variationIndex);
 
     // Get the theme configuration
-    configuration = request.app.themeConfig.getConfig();
+    const fileName = internals.getOriginalFileName(request.params.fileName);
+    const fileParts = Path.parse(fileName);
+    const pathToFile = Path.join(fileParts.dir, fileParts.name + '.scss');
+    const basePath = Path.join(internals.getThemeAssetsPath(), 'scss');
 
-    // The compiler could be 'sass' or 'less'
-    compiler = configuration.css_compiler;
-    basePath = Path.join(internals.options.assetsBasePath, compiler);
+    CssAssembler.assemble(pathToFile, basePath, 'scss', (err, files) => {
+        const configuration = request.app.themeConfig.getConfig();
 
-    // Get the path to the sass|less file
-    pathToFile = Path.join(fileParts.dir, fileParts.name + '.' + compiler);
-
-    CssAssembler.assemble(pathToFile, basePath, compiler, function(err, files) {
         var params = {
             data: files[pathToFile],
             files: files,
-            dest: Path.join('/assets/css', request.params.fileName),
+            dest: Path.join('/assets/css', fileName),
             themeSettings: configuration.settings,
             sourceMap: true,
             autoprefixerOptions: {
                 cascade: configuration.autoprefixer_cascade,
-                browsers: configuration.autoprefixer_browsers
-            }
+                browsers: configuration.autoprefixer_browsers,
+            },
         };
 
-        internals.stencilStyles.compileCss(compiler, params, function (err, css) {
+        internals.stencilStyles.compileCss('scss', params, (err, css) => {
             if (err) {
                 console.error(err);
                 return reply(Boom.badData(err));
@@ -89,7 +101,12 @@ internals.cssHandler = function (request, reply) {
  * @param reply
  */
 internals.assetHandler = function (request, reply) {
-    var filePath = Path.join(internals.options.assetsBasePath, request.params.fileName);
+    var filePath = Path.join(internals.getThemeAssetsPath(), request.params.fileName);
 
     reply.file(filePath);
+};
+
+
+internals.getThemeAssetsPath = () => {
+    return Path.join(internals.options.themePath, 'assets');
 };

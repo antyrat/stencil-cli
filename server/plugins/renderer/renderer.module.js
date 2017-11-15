@@ -1,23 +1,25 @@
-var _ = require('lodash'),
-    Boom = require('boom'),
-    Cache = require('memory-cache'),
-    Crypto = require('crypto'),
-    Frontmatter = require('front-matter'),
-    Hoek = require('hoek'),
-    Path = require('path'),
-    LangAssembler = require('../../../lib/lang-assembler'),
-    Pkg = require('../../../package.json'),
-    Responses = require('./responses/responses'),
-    TemplateAssembler = require('../../../lib/template-assembler'),
-    Url = require('url'),
-    Utils = require('../../lib/utils'),
-    stencilToken = require('../../lib/stencil-token'),
-    Wreck = require('wreck'),
-    internals = {
-        options: {},
-        cacheTTL: 1000 * 15, // 15 seconds
-        validCustomTemplatePageTypes: ['brand', 'category', 'page', 'product'],
-    };
+'use strict';
+
+const  _ = require('lodash');
+const Boom = require('boom');
+const Cache = require('memory-cache');
+const Crypto = require('crypto');
+const Frontmatter = require('front-matter');
+const Hoek = require('hoek');
+const Path = require('path');
+const LangAssembler = require('../../../lib/lang-assembler');
+const Pkg = require('../../../package.json');
+const Responses = require('./responses/responses');
+const TemplateAssembler = require('../../../lib/template-assembler');
+const Url = require('url');
+const Utils = require('../../lib/utils');
+const stencilToken = require('../../lib/stencil-token');
+const Wreck = require('wreck');
+const internals = {
+    options: {},
+    cacheTTL: 1000 * 15, // 15 seconds
+    validCustomTemplatePageTypes: ['brand', 'category', 'page', 'product'],
+};
 
 module.exports.register = function (server, options, next) {
     internals.options = Hoek.applyToDefaults(internals.options, options);
@@ -29,7 +31,7 @@ module.exports.register = function (server, options, next) {
 
 module.exports.register.attributes = {
     name: 'Renderer',
-    version: '0.0.1'
+    version: '0.0.1',
 };
 
 /**
@@ -69,18 +71,16 @@ internals.sha1sum = function (input) {
  * @param callback
  */
 internals.getResponse = function (request, callback) {
-    var staplerUrlObject = request.app.staplerUrl ? Url.parse(request.app.staplerUrl) : Url.parse(request.app.storeUrl),
-        urlObject = _.clone(request.url, true),
-        url,
-        requestSignature,
-        httpOpts = {
-            rejectUnauthorized: false,
-            headers: internals.getHeaders(request, {get_template_file: true, get_data_only: true}),
-            payload: request.payload
-        },
-        httpOptsSignature,
-        responseArgs,
-        cachedResponse;
+    const staplerUrlObject = request.app.staplerUrl ? Url.parse(request.app.staplerUrl) : Url.parse(request.app.storeUrl);
+    const urlObject = _.clone(request.url, true);
+    const httpOpts = {
+        rejectUnauthorized: false,
+        headers: internals.getHeaders(request, {
+            get_template_file: true,
+            get_data_only: true,
+        }),
+        payload: request.payload,
+    };
 
     // Set host to stapler host
     httpOpts.headers.host = staplerUrlObject.host;
@@ -94,24 +94,24 @@ internals.getResponse = function (request, callback) {
         return key;
     });
 
-    url = Url.format({
+    const url = Url.format({
         protocol: staplerUrlObject.protocol,
         host: staplerUrlObject.host,
         pathname: urlObject.pathname,
-        search: urlObject.search
+        search: urlObject.search,
     });
 
-    responseArgs = {
+    const responseArgs = {
         httpOpts: httpOpts,
         staplerUrlObject: staplerUrlObject,
-        url: url
+        url: url,
     };
 
     // create request signature for caching
-    httpOptsSignature = _.cloneDeep(httpOpts.headers);
+    const httpOptsSignature = _.cloneDeep(httpOpts.headers);
     delete httpOptsSignature.cookie;
-    requestSignature = internals.sha1sum(request.method) + internals.sha1sum(url) + internals.sha1sum(httpOptsSignature);
-    cachedResponse = Cache.get(requestSignature);
+    const requestSignature = internals.sha1sum(request.method) + internals.sha1sum(url) + internals.sha1sum(httpOptsSignature);
+    const cachedResponse = Cache.get(requestSignature);
 
     // check request signature and use cache, if available
     if (cachedResponse && 'get' === request.method && internals.options.useCache) {
@@ -275,7 +275,7 @@ internals.getResourceConfig = function (data, request, configuration) {
     // If it is an array, then it's an ajax request using `render_with` with multiple components
     // which don't have Frontmatter and needs to get it's config from the `stencil-config` header.
     if (templatePath && !_.isArray(templatePath)) {
-        rawTemplate = TemplateAssembler.getTemplateContentSync(templatePath);
+        rawTemplate = TemplateAssembler.getTemplateContentSync(internals.getThemeTemplatesPath(), templatePath);
 
         frontmatterMatch = rawTemplate.match(frontmatterRegex);
         if (frontmatterMatch !== null) {
@@ -387,10 +387,11 @@ internals.getPencilResponse = function (data, request, response, configuration) 
     data.context.theme_settings = configuration.settings;
 
     // change cdn settings to serve local assets
-    data.context.settings['cdn_url'] = '';
-    data.context.settings['theme_version_id'] = 'theme';
-    data.context.settings['theme_config_id'] = request.app.themeConfig.variationIndex + 1;
-    data.context.settings['theme_session_id'] = null;
+    data.context.settings.cdn_url = '';
+    data.context.settings.theme_version_id = Utils.int2uuid(1);
+    data.context.settings.theme_config_id = Utils.int2uuid(request.app.themeConfig.variationIndex + 1);
+    data.context.settings.theme_session_id = null;
+    data.context.settings.maintenance = {secure_path: `http://localhost:${internals.options.stencilEditorPort}`};
 
     return new Responses.PencilResponse({
         template_file: internals.getTemplatePath(request.path, data),
@@ -402,7 +403,7 @@ internals.getPencilResponse = function (data, request, response, configuration) 
         method: request.method,
         acceptLanguage: data.context.theme_settings.locale || request.headers['accept-language'],
         headers: response.headers,
-        statusCode: response.statusCode
+        statusCode: response.statusCode,
     }, internals.themeAssembler);
 };
 
@@ -438,8 +439,14 @@ internals.getHeaders = function (request, options, config) {
         'stencil-version': Pkg.config.stencil_version,
         'stencil-options': JSON.stringify(Hoek.applyToDefaults(options, currentOptions)),
         'accept-encoding': 'identity',
-        'Authorization': 'Basic ' + stencilToken.generate(internals.options.username, internals.options.token)
     };
+
+    if (internals.options.clientId && internals.options.accessToken) {
+        headers['X-Auth-Client'] = internals.options.clientId;
+        headers['X-Auth-Token'] = internals.options.accessToken;
+    } else {
+        headers['Authorization'] = 'Basic ' + stencilToken.generate(internals.options.username, internals.options.token);
+    }
 
     // Development
     if (request.app.staplerUrl) {
@@ -454,11 +461,10 @@ internals.getHeaders = function (request, options, config) {
  * @type {Object}
  */
 internals.themeAssembler = {
-    getTemplates: function (path, processor, callback) {
-        TemplateAssembler.assemble(path, function (err, templates) {
+    getTemplates: (path, processor, callback) => {
+        TemplateAssembler.assemble(internals.getThemeTemplatesPath(), path, (err, templates) => {
             if (templates[path]) {
-                // Check if the string includes frntmatter configutation
-                // and remove it
+                // Check if the string includes frontmatter configuration and remove it
                 var match = templates[path].match(/---\r?\n[\S\s]*\r?\n---\r?\n([\S\s]*)$/);
 
                 if (_.isObject(match) && match[1]) {
@@ -469,13 +475,13 @@ internals.themeAssembler = {
             callback(null, processor(templates));
         });
     },
-    getTranslations: function (callback) {
-        LangAssembler.assemble(function (err, translations) {
-            translations = _.mapValues(translations, function (locales, lang) {
-                return JSON.parse(locales);
-            });
-
-            callback(null, translations);
+    getTranslations: (callback) => {
+        LangAssembler.assemble((err, translations) => {
+            callback(null, _.mapValues(translations, locales => JSON.parse(locales)));
         });
-    }
+    },
+};
+
+internals.getThemeTemplatesPath = () => {
+    return Path.join(internals.options.themePath, 'templates');
 };

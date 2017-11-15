@@ -1,5 +1,7 @@
-var Cache = require('memory-cache');
-var _ = require('lodash');
+'use strict';
+
+const Cache = require('memory-cache');
+const Utils = require('../../../lib/utils');
 
 /**
  * Returns a request handler for POST /api/configurations
@@ -14,22 +16,22 @@ module.exports = function (options, themeConfig) {
      * @param  {Object} reply
      */
     return function (request, reply) {
-        var payload = request.payload || {};
-        var variationIndex = _.parseInt(payload.variationId - 1, 10);
-        var saveToFile = !payload.preview;
+        const payload = request.payload || {};
+        const saveToFile = !payload.preview;
 
-        if (payload.reset || payload.publish) {
+        if (!payload.variationId || payload.reset || payload.publish) {
             return reply({
                 errors: [
                     {
                         type: 'not_available',
                         title: 'Reset is not available',
-                        detail: 'Reset Is not possible while using stencil-cli.'
-                    }
-                ]
+                        detail: 'Reset Is not possible while using stencil-cli.',
+                    },
+                ],
             }).code(405);
         }
 
+        const variationIndex = Utils.uuid2int(payload.variationId) - 1;
         themeConfig.setVariation(variationIndex);
 
         themeConfig.updateConfig(payload.settings, saveToFile);
@@ -38,9 +40,9 @@ module.exports = function (options, themeConfig) {
 
         reply({
             data: {
-                configurationId: variationIndex + 1
+                configurationId: Utils.int2uuid(variationIndex + 1),
             },
-            meta: {}
+            meta: {},
         });
     };
 };

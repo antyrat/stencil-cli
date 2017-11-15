@@ -21,6 +21,7 @@ Commands:
   start       Starts up BigCommerce store using theme files in the current directory.
   bundle      Bundles up the theme into a zip file which can be uploaded to BigCommerce.
   release     Create a new release in the theme's github repository.
+  push        Bundles up the theme into a zip file and uploads it to your store.
   help [cmd]  display help for [cmd]
 
 Options:
@@ -55,7 +56,7 @@ You can compile Sass (node-sass) scss files in assets/scss into CSS. For example
 Stencil CLI comes packaged with [Autoprefixer](https://github.com/postcss/autoprefixer). You can set which browsers should be targeted, as well as if it should cascade the generated rules in the theme's config.json file with these options:
 
 - `autoprefixer_cascade` - Defaults to `true`.
-- `autoprefixer_browsers` - Defaults to `["> 5% in US"]`.
+- `autoprefixer_browsers` - Defaults to `["> 1%", "last 2 versions", "Firefox ESR"]`.
 
 ## How to get help or report a bug
 
@@ -63,7 +64,7 @@ If you need any help or experience any bugs, please create a GitHub issue in thi
 
 ## License
 
-Copyright (c) 2015-2016, BigCommerce Inc.
+Copyright (c) 2015-2017, BigCommerce Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

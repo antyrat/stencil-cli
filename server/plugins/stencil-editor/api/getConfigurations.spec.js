@@ -1,23 +1,21 @@
-var Code = require('code');
-var Fs = require('fs');
-var Lab = require('lab');
-var Path = require('path');
-var Sinon = require('sinon');
-var lab = exports.lab = Lab.script();
-var validator = new (require('jsonschema').Validator)();
-var themePath = Path.join(process.cwd(), 'test/_mocks/themes/valid');
-var ThemeConfig = require('../../../../lib/theme-config');
-var GetConfigurations = require('./getConfigurations');
-var responseSchema = require('../../../../test/_mocks/api/getConfigurations.schema');
+const Code = require('code');
+const Lab = require('lab');
+const Path = require('path');
+const lab = exports.lab = Lab.script();
+const validator = new (require('jsonschema').Validator)();
+const Utils = require('../../../lib/utils');
+const themePath = Path.join(process.cwd(), 'test/_mocks/themes/valid');
+const ThemeConfig = require('../../../../lib/theme-config');
+const GetConfigurations = require('./getConfigurations');
+const responseSchema = require('../../../../test/_mocks/api/getConfigurations.schema');
 
 lab.describe('GET /configurations/{id} api endpoint', function () {
 
     lab.it('should reply with the right schema and include the first variation settings', function (done) {
-        var originalConfig = require(Path.join(themePath, 'config.json'));
         var request = {
             params: {
-                configurationId: 1
-            }
+                configurationId: Utils.int2uuid(1),
+            },
         };
 
         var themeConfig = ThemeConfig.getInstance(themePath);
@@ -32,18 +30,17 @@ lab.describe('GET /configurations/{id} api endpoint', function () {
                 .to.be.equal('first');
 
             Code.expect(response.data.variationId)
-                .to.be.equal(1);
+                .to.be.equal(Utils.int2uuid(1));
 
             done();
         });
     });
 
     lab.it('should reply with the right schema and include the second variation settings', function (done) {
-        var originalConfig = require(Path.join(themePath, 'config.json'));
         var request = {
             params: {
-                configurationId: 2
-            }
+                configurationId: Utils.int2uuid(2),
+            },
         };
 
         var themeConfig = ThemeConfig.getInstance(themePath);
@@ -57,7 +54,7 @@ lab.describe('GET /configurations/{id} api endpoint', function () {
                 .to.be.equal('second');
 
             Code.expect(response.data.variationId)
-                .to.be.equal(2);
+                .to.be.equal(Utils.int2uuid(2));
 
             done();
         });
