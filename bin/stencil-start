@@ -47,7 +47,7 @@ Program
 
 if( Program.prefix ) {
   // If the value is true it means that no prefix was passed in.
-  if (Program.prefix ==Program= true) {
+  if (Program.prefix === true) {
       return console.error('Error: You have to specify a value for -p or --prefix'.red);
   } else {
     dotStencilFilePath = Path.join(themePath, '.stencil_' + Program.prefix);
@@ -198,7 +198,7 @@ function startServer() {
         // Watch sccs directory and automatically reload all css files if a file changes
         Bs.watch(Path.join(themePath, 'assets/scss'), event => {
             if (event === 'change') {
-                Bs.reload(`stencil/*.css`);
+            Bs.reload(`stencil/*.css`);
             }
         });
 
